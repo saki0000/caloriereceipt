@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "897363423490",
+    "project_id": "caloriereceipt",
+    "storage_bucket": "caloriereceipt.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897363423490:android:97c2d826fd27f6c715d21b",
+        "android_client_info": {
+          "package_name": "com.example.caloriemanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "897363423490-25l1i4ovttqu93mkk3r12nfrepc5o1cn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3U5jZ9owqr_gA_FmjxfD6aYUtS8tIfbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "897363423490-25l1i4ovttqu93mkk3r12nfrepc5o1cn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "897363423490-3rn0pktrpl9jqcr1o1dce6j1mv0r42og.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.caloriereceipt.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897363423490:android:2b40aba7ae31328115d21b",
+        "android_client_info": {
+          "package_name": "com.example.caloriereceipt"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "897363423490-25l1i4ovttqu93mkk3r12nfrepc5o1cn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3U5jZ9owqr_gA_FmjxfD6aYUtS8tIfbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "897363423490-25l1i4ovttqu93mkk3r12nfrepc5o1cn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "897363423490-3rn0pktrpl9jqcr1o1dce6j1mv0r42og.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.caloriereceipt.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
