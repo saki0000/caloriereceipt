@@ -1,17 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:caloriereceipt/foods_page.dart';
+import 'package:caloriereceipt/result_pge.dart';
+import 'package:caloriereceipt/time_zone_calorie_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
+import 'analyse_page.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -20,6 +22,28 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(const MyApp());
+}
+
+class AnalysePageArg {
+  final File? image;
+  final String? timeZone;
+  final DateTime? selectedDate;
+
+  AnalysePageArg(this.image, this.timeZone, this.selectedDate);
+}
+
+class ResultPageArg {
+  final List<String> receipt;
+  final String timeZone;
+  final DateTime selectedDate;
+
+  ResultPageArg(this.receipt, this.timeZone, this.selectedDate);
+}
+
+class FoodsPageArg {
+  final DateTime selectedDate;
+  final String timeZone;
+  FoodsPageArg(this.selectedDate, this.timeZone);
 }
 
 class MyApp extends StatelessWidget {
@@ -32,26 +56,51 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
           useMaterial3: true,
         ),
-        home: const MyHomePage(title: 'Flutter Demo Home Page'),
-        routes: <String, WidgetBuilder>{
-          '/my-page-1': (BuildContext context) =>
-              const MyHomePage(title: 'Flutter Demo Page'),
-        },
+        home: const MyHomePage(),
+        // routes: <String, WidgetBuilder>{
+        //   '/home': (BuildContext context) => const MyHomePage(),
+        // },
         onGenerateRoute: (settings) {
-          if (settings.name == '/my-page-2') {
-            final arg = settings.arguments as List<String>;
+          if (settings.name == '/result-page') {
+            final arg = settings.arguments as ResultPageArg;
             return MaterialPageRoute(
-              builder: (context) => AnalyticsPage(receipt: arg),
+              builder: (context) => ResultPage(
+                receipt: arg.receipt,
+                timeZone: arg.timeZone,
+                selectedDate: arg.selectedDate,
+              ),
             );
+          } else if (settings.name == '/analyse-page') {
+            final arg = settings.arguments as AnalysePageArg;
+            return MaterialPageRoute(
+                builder: (context) => AnalysePage(
+                      image: arg.image,
+                      timeZone: arg.timeZone,
+                      selectedDate: arg.selectedDate,
+                    ));
+          } else if (settings.name == '/home') {
+            final arg = settings.arguments as DateTime;
+            return MaterialPageRoute(
+                builder: (context) => MyHomePage(
+                      selectedDate: arg,
+                    ));
+          } else if (settings.name == "/foods-page") {
+            final arg = settings.arguments as FoodsPageArg;
+            return MaterialPageRoute(
+                builder: (context) => FoodsPage(
+                      selectedDate: arg.selectedDate,
+                      timeZone: arg.timeZone,
+                    ));
           }
+          ;
           return null;
         });
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+  final DateTime? selectedDate;
+  const MyHomePage({super.key, this.selectedDate});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -59,29 +108,39 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   File? _image;
-  List<String>? _result;
+
+  DateTime? _selectedDate;
+  List<DateTime>? _weekArray;
+  String? _timeZone;
+
+  DateTime? _selectedModalDate;
 
   @override
   void initState() {
     super.initState();
+
+    DateTime today = DateTime.now();
+
+    setState(() {
+      _selectedDate = widget.selectedDate ?? today;
+      _selectedModalDate = widget.selectedDate ?? today;
+      List<DateTime> weekArray = [];
+
+      DateTime? startWeek = _selectedDate!.weekday == 7
+          ? _selectedDate
+          : _selectedDate!.subtract(Duration(days: _selectedDate!.weekday));
+      for (var i = 0; i < 7; i++) {
+        DateTime addDate = startWeek!.add(Duration(days: i));
+        weekArray.add(addDate);
+      }
+      _weekArray = weekArray;
+    });
+
     _signIn();
   }
 
   void _signIn() async {
     await FirebaseAuth.instance.signInAnonymously();
-  }
-
-  Future<void> uploadImage(String uploadFileName) async {
-    final FirebaseStorage storage = FirebaseStorage.instance;
-    Reference ref = storage.ref().child("images");
-
-    UploadTask task = ref.child(uploadFileName).putFile(_image!);
-
-    try {
-      await task;
-    } catch (e) {
-      print(e);
-    }
   }
 
   Future pickImage() async {
@@ -90,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (image == null) return;
       final imageTemp = File(image.path);
       setState(() => _image = imageTemp);
+      route();
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
     }
@@ -111,224 +171,323 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void route() async {
     if (context.mounted) {
-      await Navigator.of(context).pushNamed('/my-page-2', arguments: _result);
+      await Navigator.of(context).pushNamed('/analyse-page',
+          arguments: AnalysePageArg(_image!, _timeZone!, _selectedDate!));
     }
+  }
+
+  Future _fetchCalories() async {
+    final date = DateFormat("y-MM-dd").format(_selectedDate!);
+    final firestore = FirebaseFirestore.instance;
+    final snapshot = await firestore
+        .collection("calories")
+        .where("date", isEqualTo: date)
+        .get();
+    final calories =
+        snapshot.docs.map((doc) => Calorie.fromMap(doc.data())).toList();
+    return calories;
   }
 
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Stack(children: [
-        Center(
-            child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-                width: size.width * 0.8,
-                height: size.width * 0.8 * 4 / 3,
-                child: _image != null
-                    ? Image.file(_image!)
-                    : const Text("No image selected")),
-            if (_image != null) _analysisButton(),
-          ],
-        )),
-        Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    MaterialButton(
-                      child: Icon(Icons.photo),
-                      onPressed: pickImage,
-                    ),
-                    MaterialButton(
-                        onPressed: pickImageC, child: Icon(Icons.camera))
-                  ],
-                ))),
-      ]),
-    );
-  }
+    final String title = DateFormat("y/MM/dd").format(_selectedDate!);
+    final List<String> weeks = ["s", "m", "t", "w", "t", "f", "s"];
 
-  Widget _analysisButton() {
-    final db = FirebaseFirestore.instance;
-    return ElevatedButton(
-        onPressed: () async {
-          List<int> _imageBytes = _image!.readAsBytesSync();
-          String _base64Image = base64Encode(_imageBytes);
-          final params = {
-            "image": {"content": "$_base64Image"},
-            "features": [
-              {"type": "TEXT_DETECTION"}
-            ],
-            "imageContext": {
-              "languageHints": ["ja"]
-            }
-          };
-          final _text = await FirebaseFunctions.instance
-              .httpsCallable('annotateImage')
-              .call(params)
-              .then((v) {
-            return v.data[0]["fullTextAnnotation"]["text"].split("\n");
-          }).catchError((e) {
-            print(e);
-            print(e.details);
-            print(e.message);
-            return '読み取りエラーです';
-          });
-          setState(() {
-            _result = _text;
-          });
-          db.collection("foods").add({"text": _result});
-
-          DateTime now = DateTime.now();
-          DateFormat outputFormat = DateFormat('yyyy-MM-dd-Hm');
-          String date = outputFormat.format(now);
-          uploadImage(date);
-          // fetchP
-          // roduct();
-          route();
-        },
-        child: const Text('解析'));
-  }
-}
-
-class AnalyticsPage extends StatefulWidget {
-  final List<String> receipt;
-
-  const AnalyticsPage({Key? key, required this.receipt}) : super(key: key);
-  @override
-  State<AnalyticsPage> createState() => _AnalyticsPageState();
-}
-
-class _AnalyticsPageState extends State<AnalyticsPage> {
-  @override
-  Widget build(BuildContext context) {
-    final receipt = widget.receipt;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('MyPage 2')),
-      body: ProductListPage(
-        receipt: receipt,
-      ),
-    );
-  }
-}
-
-class ProductListPage extends StatefulWidget {
-  final List<String> receipt;
-
-  const ProductListPage({Key? key, required this.receipt}) : super(key: key);
-  @override
-  State<ProductListPage> createState() => _ProductListPageState();
-}
-
-class _ProductListPageState extends State<ProductListPage> {
-  Future<List<SearchProducts>> _fetchProduct() async {
-    List<SearchProducts> searchProducts = [];
-    final firestore = FirebaseFirestore.instance;
-
-    for (String w in widget.receipt) {
-      Query<Map<String, dynamic>> query = firestore.collection('products');
-      List<String> splitedWord = w.split("").toSet().toList();
-      splitedWord.removeWhere((e) => ['~', '*', '/', '[', ']'].contains(e));
-
-      for (String s in splitedWord) {
-        query = query.where('wordsMap.$s', isEqualTo: true);
-      }
-
-      final snapshot = await query.get();
-      List<Product> products = await Future.wait(snapshot.docs.map((doc) async {
-        Uint8List? data;
-        final storageRef = FirebaseStorage.instance;
-        if (doc.data()['imagePath'] != null) {
-          final productRef = storageRef.refFromURL(doc.data()['imagePath']);
-          try {
-            const oneMegabyte = 1024 * 1024;
-            data = await productRef.getData(oneMegabyte);
-          } on FirebaseException catch (e) {
-            print(e);
-          }
-        }
-        return Product.fromMap(doc.data(), data);
-      }).toList());
-      if (products.length != 0) {
-        searchProducts.add(SearchProducts(searchWord: w, products: products));
-      }
+    void routeCameraModal() {
+      Navigator.of(context).pop();
+      showModalBottomSheet(
+          context: context,
+          builder: (context) => Container(
+              height: 200,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.photo),
+                    onPressed: pickImage,
+                  ),
+                  IconButton(onPressed: pickImageC, icon: Icon(Icons.camera))
+                ],
+              )));
     }
-    return searchProducts;
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    // ListとPersonクラスを指定する
-    return FutureBuilder<List<SearchProducts>>(
-      // 上で定義したメソッドを使用する
-      future: _fetchProduct(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return FutureBuilder(
+        future: _fetchCalories(),
+        builder: ((context, snapshot) {
+          // if (snapshot.connectionState == ConnectionState.waiting) {
+          //   return const Center(child: CircularProgressIndicator());
+          // }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        final products = snapshot.data!;
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final calories = snapshot.data!;
+          num todayCalorie = 0;
+          Map<String, Map<String, dynamic>> timeZoneCalorieData = {
+            "breakfast": {"calorie": 0, "foods": []},
+            "lunch": {"calorie": 0, "foods": []},
+            "dinner": {"calorie": 0, "foods": []},
+            "snack": {"calorie": 0, "foods": []},
+          };
+          for (var c in calories) {
+            todayCalorie += c.calorie;
+            switch (c.timeZone) {
+              case "breakfast":
+                final breakfastMap = timeZoneCalorieData["breakfast"];
+                breakfastMap!["foods"].add(c);
+                breakfastMap["calorie"] += c.calorie;
+                break;
+              case "lunch":
+                final lunchMap = timeZoneCalorieData["lunch"];
+                lunchMap!["foods"].add(c);
+                lunchMap["calorie"] += c.calorie;
+                break;
+              case "dinner":
+                final dinnerMap = timeZoneCalorieData["dinner"];
+                dinnerMap!["foods"].add(c);
+                dinnerMap["calorie"] += c.calorie;
+                break;
+              case "snack":
+                final snackMap = timeZoneCalorieData["snack"];
+                snackMap!["foods"].add(c);
+                snackMap["calorie"] += c.calorie;
+                break;
+            }
+          }
 
-        return ListView.builder(
-          // Listのデータの数を数える
-          itemCount: products.length,
-          itemBuilder: (context, index) {
-            // index番目から数えて、０〜３まで登録されているデータを表示する変数
-            final product = products[index].products[0];
-            // downloadImage(product.imagePath);
-            return ListTile(
-                // Personクラスのメンバ変数を使用する
-                title: Text('Name: ${product.name}'),
-                subtitle: Text('Calorie: ${product.calorie}'),
-                leading: product.imageData != null
-                    ? Image.memory(product.imageData!)
-                    : const Icon(Icons.fastfood_outlined));
-          },
-        );
-      },
-    );
+          return Scaffold(
+              backgroundColor: Colors.blueGrey[50],
+              appBar: AppBar(
+                title: Text(title),
+                backgroundColor: Colors.blueGrey[50],
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.calendar_month),
+                    onPressed: () {
+                      showModalBottomSheet(
+                          context: context,
+                          builder: (context) => StatefulBuilder(
+                              builder: (context, StateSetter setModalState) =>
+                                  Container(
+                                    height: 800,
+                                    margin: EdgeInsets.all(16),
+                                    child: Column(children: [
+                                      TableCalendar(
+                                        firstDay:
+                                            DateTime(DateTime.now().year, 1, 1),
+                                        lastDay: DateTime(
+                                            DateTime.now().year, 12, 31),
+                                        focusedDay: DateTime.now(),
+                                        selectedDayPredicate: (day) {
+                                          return isSameDay(
+                                              _selectedModalDate, day);
+                                        },
+                                        onDaySelected:
+                                            (selectedDay, focusedDay) {
+                                          print(_selectedDate);
+                                          setModalState(() {
+                                            _selectedModalDate = selectedDay;
+                                          });
+                                          setState(() {
+                                            _selectedDate = selectedDay;
+                                            List<DateTime> weekArray = [];
+
+                                            DateTime? startWeek =
+                                                _selectedDate!.weekday == 7
+                                                    ? _selectedDate
+                                                    : _selectedDate!.subtract(
+                                                        Duration(
+                                                            days: _selectedDate!
+                                                                .weekday));
+                                            for (var i = 0; i < 7; i++) {
+                                              DateTime addDate = startWeek!
+                                                  .add(Duration(days: i));
+                                              weekArray.add(addDate);
+                                            }
+                                            _weekArray = weekArray;
+                                          });
+                                        },
+                                      )
+                                    ]),
+                                  )));
+                    },
+                  )
+                ],
+              ),
+              body: SingleChildScrollView(
+                  child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      for (int i = 0; i < 7; i++)
+                        Column(
+                          children: [
+                            Text(weeks[i],
+                                style: const TextStyle(color: Colors.black38)),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _selectedDate = _weekArray![i];
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: (_selectedDate == _weekArray![i])
+                                    ? BoxDecoration(
+                                        borderRadius: BorderRadius.circular(50),
+                                        border:
+                                            Border.all(color: Colors.black45))
+                                    : const BoxDecoration(),
+                                child: Text(
+                                  "${_weekArray![i].day}",
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                    ],
+                  ),
+                  Container(
+                      width: size.width * 0.6,
+                      height: size.width * 0.6,
+                      alignment: const Alignment(0.0, 0.0),
+                      margin: const EdgeInsets.symmetric(vertical: 24),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(size.width * 0.3),
+                          color: Colors.blueGrey),
+                      child: Text('${todayCalorie}kcal',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold))),
+                  TimeZoneCalorieWidget(
+                    timeZone: "breakfast",
+                    calorie: timeZoneCalorieData["breakfast"]!["calorie"],
+                    icon: Icons.sunny_snowing,
+                    products: timeZoneCalorieData["breakfast"]!["foods"],
+                    selectedDate: _selectedDate!,
+                    setState: setState,
+                  ),
+                  TimeZoneCalorieWidget(
+                    timeZone: "lunch",
+                    calorie: timeZoneCalorieData["lunch"]!["calorie"],
+                    icon: Icons.sunny,
+                    products: timeZoneCalorieData["lunch"]!["foods"],
+                    selectedDate: _selectedDate!,
+                    setState: setState,
+                  ),
+                  TimeZoneCalorieWidget(
+                    timeZone: "dinner",
+                    calorie: timeZoneCalorieData["dinner"]!["calorie"],
+                    icon: Icons.nightlight,
+                    products: timeZoneCalorieData["dinner"]!["foods"],
+                    selectedDate: _selectedDate!,
+                    setState: setState,
+                  ),
+                  TimeZoneCalorieWidget(
+                      timeZone: "snack",
+                      calorie: timeZoneCalorieData["snack"]!["calorie"],
+                      icon: Icons.local_cafe,
+                      products: timeZoneCalorieData["breakfast"]!["foods"],
+                      selectedDate: _selectedDate!,
+                      setState: setState),
+                  SizedBox(height: 80)
+                ],
+              )),
+              floatingActionButton: FloatingActionButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                      context: context,
+                      builder: (context) => Container(
+                          height: 200,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
+                                      children: [
+                                        IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _timeZone = "breakfast";
+                                              });
+                                              routeCameraModal();
+                                            },
+                                            icon: const Icon(
+                                              Icons.sunny_snowing,
+                                              size: 30,
+                                            )),
+                                        IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _timeZone = "lunch";
+                                              });
+                                              routeCameraModal();
+                                            },
+                                            icon: const Icon(
+                                              Icons.sunny,
+                                              size: 30,
+                                            )),
+                                        IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _timeZone = "dinner";
+                                              });
+                                              routeCameraModal();
+                                            },
+                                            icon: const Icon(
+                                              Icons.nightlight,
+                                              size: 30,
+                                            )),
+                                        IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                _timeZone = "snack";
+                                              });
+                                              routeCameraModal();
+                                            },
+                                            icon: const Icon(Icons.local_cafe,
+                                                size: 30))
+                                      ],
+                                    ),
+                                  ]),
+                            ],
+                          )));
+                },
+                backgroundColor: Colors.blueGrey[700],
+                child: const Icon(
+                  Icons.add,
+                  color: Colors.white,
+                ),
+              ));
+        }));
   }
 }
 
-class SearchProducts {
-  final String searchWord;
-  final List<Product> products;
-
-  SearchProducts({required this.searchWord, required this.products});
-}
-
-class Product {
+class Calorie {
   final String name;
   final int calorie;
-  final List<dynamic> words;
-  final String? imagePath;
-  final Uint8List? imageData;
+  final String imagePath;
+  final String date;
+  final String timeZone;
 
-  Product({
-    required this.name,
-    required this.calorie,
-    required this.words,
-    this.imagePath,
-    this.imageData,
-  });
+  Calorie(
+      {required this.name,
+      required this.calorie,
+      required this.imagePath,
+      required this.date,
+      required this.timeZone});
 
-  factory Product.fromMap(Map<String, dynamic> data, Uint8List? imageData) {
-    return Product(
-      name: data['name'],
-      calorie: data['calorie'],
-      words: data['words'],
-      imagePath: data['imagePath'],
-      imageData: imageData,
-    );
+  factory Calorie.fromMap(Map<String, dynamic> data) {
+    return Calorie(
+        name: data["name"],
+        calorie: data["calorie"],
+        imagePath: data["imagePath"],
+        date: data["date"],
+        timeZone: data["timeZone"]);
   }
 }
