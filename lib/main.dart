@@ -471,14 +471,14 @@ class _MyHomePageState extends State<MyHomePage> {
 class Calorie {
   final String name;
   final int calorie;
-  final String imagePath;
+  final String? imageURL;
   final String date;
   final String timeZone;
 
   Calorie(
       {required this.name,
       required this.calorie,
-      required this.imagePath,
+      required this.imageURL,
       required this.date,
       required this.timeZone});
 
@@ -486,7 +486,7 @@ class Calorie {
     return Calorie(
         name: data["name"],
         calorie: data["calorie"],
-        imagePath: data["imagePath"],
+        imageURL: data["imageURL"],
         date: data["date"],
         timeZone: data["timeZone"]);
   }

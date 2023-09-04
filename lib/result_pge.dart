@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class ResultPage extends StatefulWidget {
@@ -67,9 +65,11 @@ class _ProductListPageState extends State<ProductListPage> {
 
     for (String w in widget.receipt) {
       Query<Map<String, dynamic>> query = firestore.collection('products');
-      List<String> splitedWord = w.split("").toSet().toList();
+      List<String> splitedWord =
+          w.replaceAll("-", "ー").split("").toSet().toList();
       splitedWord
           .removeWhere((e) => ['~', '*', '/', '[', ']', ' ', "ﾞ"].contains(e));
+      print(splitedWord);
 
       for (var i = 0; i < splitedWord.length; i++) {
         splitedWord[i] = convertText(input: splitedWord[i]);
@@ -79,18 +79,20 @@ class _ProductListPageState extends State<ProductListPage> {
         query = query.where('wordsMap.$s', isEqualTo: true);
       }
       final snapshot = await query.get();
+      print(splitedWord);
       List<Product> products = await Future.wait(snapshot.docs.map((doc) async {
-        Uint8List? data;
-        final storageRef = FirebaseStorage.instance;
-        if (doc.data()['imagePath'] != null) {
-          final productRef = storageRef.refFromURL(doc.data()['imagePath']);
-          try {
-            const oneMegabyte = 1024 * 1024;
-            data = await productRef.getData(oneMegabyte);
-          } on FirebaseException {}
-        }
-        return Product.fromMap(doc.data(), data, doc.id);
+        // Uint8List? data;
+        // final storageRef = FirebaseStorage.instance;
+        // if (doc.data()['imageURL'] != null) {
+        //   final productRef = storageRef.refFromURL(doc.data()['imageURL']);
+        //   try {
+        //     const oneMegabyte = 1024 * 1024;
+        //     data = await productRef.getData(oneMegabyte);
+        //   } on FirebaseException {}
+        // }
+        return Product.fromMap(doc.data(), doc.id);
       }).toList());
+      print(products);
       if (products.isNotEmpty) {
         searchProducts.add(SearchProducts(searchWord: w, products: products));
       }
@@ -128,13 +130,13 @@ class _ProductListPageState extends State<ProductListPage> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              product.imageData != null
+              product.imageURL != null
                   ? SizedBox(
                       width: 50,
                       height: 50,
                       child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(product.imageData!)),
+                          child: Image.network(product.imageURL!)),
                     )
                   : const Icon(Icons.fastfood_outlined),
               Flexible(
@@ -197,7 +199,7 @@ class _ProductListPageState extends State<ProductListPage> {
                       products[index].products[_selectIndexes![index]];
                   final searchWord = products[index].searchWord;
                   print(_selectIndexes![index]);
-                  // downloadImage(product.imagePath);
+                  // downloadImage(product.imageURL);
                   return Stack(
                     alignment: AlignmentDirectional.topEnd,
                     children: [
@@ -322,9 +324,8 @@ class _ProductListPageState extends State<ProductListPage> {
                           "name": products[i].products[_selectIndexes![i]].name,
                           "calorie":
                               products[i].products[_selectIndexes![i]].calorie,
-                          "imagePath": products[i]
-                              .products[_selectIndexes![i]]
-                              .imagePath,
+                          "imageURL":
+                              products[i].products[_selectIndexes![i]].imageURL,
                           "timeZone": widget.timeZone,
                           "date": date,
                         };
@@ -351,25 +352,23 @@ class SearchProducts {
 class Product {
   final String name;
   final int calorie;
-  final String? imagePath;
-  final Uint8List? imageData;
+  final String? imageURL;
+  // final Uint8List? imageData;
   final String? id;
 
   Product({
     required this.name,
     required this.calorie,
-    this.imagePath,
-    this.imageData,
+    this.imageURL,
+    // this.imageData,
     this.id,
   });
 
-  factory Product.fromMap(
-      Map<String, dynamic> data, Uint8List? imageData, String? id) {
+  factory Product.fromMap(Map<String, dynamic> data, String? id) {
     return Product(
       name: data['name'],
       calorie: data['calorie'],
-      imagePath: data['imagePath'],
-      imageData: imageData,
+      imageURL: data['imageURL'],
       id: id,
     );
   }
@@ -484,7 +483,7 @@ final kanaMap = {
   'ｬ': 'ャ',
   'ｭ': 'ュ',
   'ｮ': 'ョ',
-  'ｰ': 'ー',
+  '-': 'ー',
 };
 final alphanumericMap = {
   'Ａ': 'A',

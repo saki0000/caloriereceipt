@@ -1,8 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:caloriereceipt/result_pge.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -27,16 +24,16 @@ class _FoodsPageState extends State<FoodsPage> {
         .where("timeZone", isEqualTo: widget.timeZone)
         .get();
     List<Product> foods = await Future.wait(snapshot.docs.map((doc) async {
-      Uint8List? data;
-      final storageRef = FirebaseStorage.instance;
-      if (doc.data()['imagePath'] != null) {
-        final productRef = storageRef.refFromURL(doc.data()['imagePath']);
-        try {
-          const oneMegabyte = 1024 * 1024;
-          data = await productRef.getData(oneMegabyte);
-        } on FirebaseException {}
-      }
-      return Product.fromMap(doc.data(), data, doc.id);
+      // Uint8List? data;
+      // final storageRef = FirebaseStorage.instance;
+      // if (doc.data()['imageURL'] != null) {
+      //   final productRef = storageRef.refFromURL(doc.data()['imageURL']);
+      //   try {
+      //     const oneMegabyte = 1024 * 1024;
+      //     data = await productRef.getData(oneMegabyte);
+      //   } on FirebaseException {}
+      // }
+      return Product.fromMap(doc.data(), doc.id);
     }).toList());
     return foods;
   }
@@ -89,15 +86,15 @@ class _FoodsPageState extends State<FoodsPage> {
                               child: Container(
                                 child: Row(
                                   children: [
-                                    foods[index].imageData != null
+                                    foods[index].imageURL != null
                                         ? SizedBox(
                                             width: 50,
                                             height: 50,
                                             child: ClipRRect(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                child: Image.memory(
-                                                    foods[index].imageData!)),
+                                                child: Image.network(
+                                                    foods[index].imageURL!)),
                                           )
                                         : const Icon(Icons.fastfood_outlined),
                                     Flexible(
