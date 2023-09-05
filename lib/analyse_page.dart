@@ -48,10 +48,11 @@ class _AnalysePageState extends State<AnalysePage> {
       backgroundColor: Colors.blueGrey[100],
       appBar: AppBar(backgroundColor: Colors.blueGrey[100], title: Text("写真")),
       body: Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
+          child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
               decoration: BoxDecoration(
                   border: Border.all(color: Colors.white),
                   borderRadius: BorderRadius.circular(8)),
@@ -62,9 +63,11 @@ class _AnalysePageState extends State<AnalysePage> {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.file(widget.image!),
                     )
-                  : const Text("No image selected")),
-          if (widget.image != null) _analysisButton(),
-        ],
+                  : const Text("No image selected"),
+            ),
+            if (widget.image != null) _analysisButton()
+          ],
+        ),
       )),
     );
   }
