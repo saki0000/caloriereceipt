@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+// 画像の確認と解析するページ
 class AnalysePage extends StatefulWidget {
   final File? image;
   final String? timeZone;

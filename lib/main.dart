@@ -16,8 +16,10 @@ import 'package:table_calendar/table_calendar.dart';
 import 'analyse_page.dart';
 import 'firebase_options.dart';
 
+// main　最初の画面
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // firebaseの設定
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -57,9 +59,6 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         home: const MyHomePage(),
-        // routes: <String, WidgetBuilder>{
-        //   '/home': (BuildContext context) => const MyHomePage(),
-        // },
         onGenerateRoute: (settings) {
           if (settings.name == '/result-page') {
             final arg = settings.arguments as ResultPageArg;
@@ -98,6 +97,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// home page
 class MyHomePage extends StatefulWidget {
   final DateTime? selectedDate;
   const MyHomePage({super.key, this.selectedDate});
@@ -107,23 +107,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // 画像
   File? _image;
-
+  // 選択した日付
   DateTime? _selectedDate;
+  // 選択した日付の週
   List<DateTime>? _weekArray;
+  // ご飯の時間
   String? _timeZone;
-
+  // カレンダーで使うやつ
   DateTime? _selectedModalDate;
 
   @override
+  // 関数
   void initState() {
     super.initState();
 
+    // 今日の日付を取得
     DateTime today = DateTime.now();
 
     setState(() {
       _selectedDate = widget.selectedDate ?? today;
       _selectedModalDate = widget.selectedDate ?? today;
+
+      // 週の日付をリストに追加
       List<DateTime> weekArray = [];
 
       DateTime? startWeek = _selectedDate!.weekday == 7
@@ -143,6 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await FirebaseAuth.instance.signInAnonymously();
   }
 
+  // 画像をライブラリから選択して画面遷移を関数
   Future pickImage() async {
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -155,6 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // カメラを使い画面遷移を関数
   Future pickImageC() async {
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.camera);
@@ -164,11 +173,13 @@ class _MyHomePageState extends State<MyHomePage> {
       final imageTemp = File(image.path);
 
       setState(() => _image = imageTemp);
+      route();
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
     }
   }
 
+  // 画面遷移をする関数
   void route() async {
     if (context.mounted) {
       await Navigator.of(context).pushNamed('/analyse-page',
@@ -176,6 +187,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // firestoreから選択した日付のデータを取得する関数
   Future _fetchCalories() async {
     final date = DateFormat("y-MM-dd").format(_selectedDate!);
     final firestore = FirebaseFirestore.instance;
@@ -188,6 +200,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return calories;
   }
 
+  // 下から出てくるモーダル カメラかライブラリを選ぶ
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final String title = DateFormat("y/MM/dd").format(_selectedDate!);
@@ -218,11 +231,14 @@ class _MyHomePageState extends State<MyHomePage> {
           //   return const Center(child: CircularProgressIndicator());
           // }
 
+          // エラー
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
+          // home画面で使うデータ
           final calories = snapshot.data!;
           num todayCalorie = 0;
+          // 朝昼晩のデータを入れる
           Map<String, Map<String, dynamic>> timeZoneCalorieData = {
             "breakfast": {"calorie": 0, "foods": []},
             "lunch": {"calorie": 0, "foods": []},
@@ -257,10 +273,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return Scaffold(
               backgroundColor: Colors.blueGrey[50],
+              // 一番上のやつ
               appBar: AppBar(
                 title: Text(title),
                 backgroundColor: Colors.blueGrey[50],
                 actions: [
+                  // カレンダーボタン
                   IconButton(
                     icon: Icon(Icons.calendar_month),
                     onPressed: () {
@@ -314,6 +332,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   )
                 ],
               ),
+              // body
               body: SingleChildScrollView(
                   child: Column(
                 children: [
@@ -396,6 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
               )),
               floatingActionButton: FloatingActionButton(
                 onPressed: () {
+                  // modal
                   showModalBottomSheet(
                       context: context,
                       builder: (context) => Container(
