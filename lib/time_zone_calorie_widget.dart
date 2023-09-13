@@ -56,7 +56,8 @@ class TimeZoneCalorieWidget extends StatelessWidget {
                         children: [
                           Text(
                             title[timeZone]!,
-                            style: TextStyle(fontSize: 18),
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ],
                       )

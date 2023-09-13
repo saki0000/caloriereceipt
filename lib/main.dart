@@ -211,15 +211,35 @@ class _MyHomePageState extends State<MyHomePage> {
       showModalBottomSheet(
           context: context,
           builder: (context) => Container(
+              padding: EdgeInsets.all(20),
               height: 200,
-              child: Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.photo),
-                    onPressed: pickImage,
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.photo,
+                          size: 30,
+                        ),
+                        onPressed: pickImage,
+                      ),
+                      Text("ライブラリから選択")
+                    ],
                   ),
-                  IconButton(onPressed: pickImageC, icon: Icon(Icons.camera))
+                  Row(
+                    children: [
+                      IconButton(
+                          onPressed: pickImageC,
+                          icon: Icon(
+                            Icons.camera,
+                            size: 30,
+                          )),
+                      Text("カメラで写真を撮る")
+                    ],
+                  )
                 ],
               )));
     }
@@ -227,9 +247,9 @@ class _MyHomePageState extends State<MyHomePage> {
     return FutureBuilder(
         future: _fetchCalories(),
         builder: ((context, snapshot) {
-          // if (snapshot.connectionState == ConnectionState.waiting) {
-          //   return const Center(child: CircularProgressIndicator());
-          // }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           // エラー
           if (snapshot.hasError) {
@@ -381,34 +401,34 @@ class _MyHomePageState extends State<MyHomePage> {
                               fontWeight: FontWeight.bold))),
                   TimeZoneCalorieWidget(
                     timeZone: "breakfast",
-                    calorie: timeZoneCalorieData["breakfast"]!["calorie"],
+                    calorie: timeZoneCalorieData["breakfast"]!["calorie"] ?? 0,
                     icon: Icons.sunny_snowing,
-                    products: timeZoneCalorieData["breakfast"]!["foods"],
-                    selectedDate: _selectedDate!,
+                    products: timeZoneCalorieData["breakfast"]!["foods"] ?? [],
+                    selectedDate: _selectedDate ?? DateTime.now(),
                     setState: setState,
                   ),
                   TimeZoneCalorieWidget(
                     timeZone: "lunch",
-                    calorie: timeZoneCalorieData["lunch"]!["calorie"],
+                    calorie: timeZoneCalorieData["lunch"]!["calorie"] ?? 0,
                     icon: Icons.sunny,
-                    products: timeZoneCalorieData["lunch"]!["foods"],
-                    selectedDate: _selectedDate!,
+                    products: timeZoneCalorieData["lunch"]!["foods"] ?? [],
+                    selectedDate: _selectedDate ?? DateTime.now(),
                     setState: setState,
                   ),
                   TimeZoneCalorieWidget(
                     timeZone: "dinner",
-                    calorie: timeZoneCalorieData["dinner"]!["calorie"],
+                    calorie: timeZoneCalorieData["dinner"]!["calorie"] ?? 0,
                     icon: Icons.nightlight,
-                    products: timeZoneCalorieData["dinner"]!["foods"],
-                    selectedDate: _selectedDate!,
+                    products: timeZoneCalorieData["dinner"]!["foods"] ?? [],
+                    selectedDate: _selectedDate ?? DateTime.now(),
                     setState: setState,
                   ),
                   TimeZoneCalorieWidget(
                       timeZone: "snack",
-                      calorie: timeZoneCalorieData["snack"]!["calorie"],
+                      calorie: timeZoneCalorieData["snack"]!["calorie"] ?? 0,
                       icon: Icons.local_cafe,
-                      products: timeZoneCalorieData["breakfast"]!["foods"],
-                      selectedDate: _selectedDate!,
+                      products: timeZoneCalorieData["snack"]!["foods"] ?? [],
+                      selectedDate: _selectedDate ?? DateTime.now(),
                       setState: setState),
                   SizedBox(height: 80)
                 ],
@@ -419,64 +439,98 @@ class _MyHomePageState extends State<MyHomePage> {
                   showModalBottomSheet(
                       context: context,
                       builder: (context) => Container(
-                          height: 200,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Column(
+                            margin: EdgeInsets.all(20),
+                            alignment: Alignment.center,
+                            height: 200,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _timeZone = "breakfast";
-                                              });
-                                              routeCameraModal();
-                                            },
-                                            icon: const Icon(
-                                              Icons.sunny_snowing,
-                                              size: 30,
-                                            )),
-                                        IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _timeZone = "lunch";
-                                              });
-                                              routeCameraModal();
-                                            },
-                                            icon: const Icon(
-                                              Icons.sunny,
-                                              size: 30,
-                                            )),
-                                        IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _timeZone = "dinner";
-                                              });
-                                              routeCameraModal();
-                                            },
-                                            icon: const Icon(
-                                              Icons.nightlight,
-                                              size: 30,
-                                            )),
-                                        IconButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                _timeZone = "snack";
-                                              });
-                                              routeCameraModal();
-                                            },
-                                            icon: const Icon(Icons.local_cafe,
-                                                size: 30))
-                                      ],
-                                    ),
-                                  ]),
-                            ],
-                          )));
+                                    IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _timeZone = "breakfast";
+                                          });
+                                          routeCameraModal();
+                                        },
+                                        icon: const Icon(
+                                          Icons.sunny_snowing,
+                                          size: 30,
+                                        )),
+                                    const Text(
+                                      "朝食",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    )
+                                  ],
+                                ),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _timeZone = "lunch";
+                                          });
+                                          routeCameraModal();
+                                        },
+                                        icon: const Icon(
+                                          Icons.sunny,
+                                          size: 30,
+                                        )),
+                                    const Text(
+                                      "昼食",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    )
+                                  ],
+                                ),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _timeZone = "dinner";
+                                          });
+                                          routeCameraModal();
+                                        },
+                                        icon: const Icon(
+                                          Icons.nightlight,
+                                          size: 30,
+                                        )),
+                                    const Text(
+                                      "夕食",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    )
+                                  ],
+                                ),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _timeZone = "snack";
+                                          });
+                                          routeCameraModal();
+                                        },
+                                        icon: const Icon(Icons.local_cafe,
+                                            size: 30)),
+                                    const Text(
+                                      "間食",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ));
                 },
                 backgroundColor: Colors.blueGrey[700],
                 child: const Icon(
