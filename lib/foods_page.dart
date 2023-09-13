@@ -25,15 +25,6 @@ class _FoodsPageState extends State<FoodsPage> {
         .where("timeZone", isEqualTo: widget.timeZone)
         .get();
     List<Product> foods = await Future.wait(snapshot.docs.map((doc) async {
-      // Uint8List? data;
-      // final storageRef = FirebaseStorage.instance;
-      // if (doc.data()['imageURL'] != null) {
-      //   final productRef = storageRef.refFromURL(doc.data()['imageURL']);
-      //   try {
-      //     const oneMegabyte = 1024 * 1024;
-      //     data = await productRef.getData(oneMegabyte);
-      //   } on FirebaseException {}
-      // }
       return Product.fromMap(doc.data(), doc.id);
     }).toList());
     return foods;
