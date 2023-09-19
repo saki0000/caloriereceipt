@@ -166,129 +166,137 @@ class _ResultPageState extends State<ResultPage> {
               backgroundColor: Colors.blueGrey[50],
               body: Stack(
                 children: [
-                  ListView.builder(
-                      // Listのデータの数を数える
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        // index番目から数えて、０〜３まで登録されているデータを表示する変数
-                        var product =
-                            products[index].products[_selectIndexes![index]];
-                        final searchWord = products[index].searchWord;
-                        print(products);
-                        // downloadImage(product.imageURL);
-                        return Stack(
-                          alignment: AlignmentDirectional.topEnd,
-                          children: [
-                            Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10)),
-                                child: Stack(
-                                  children: [
-                                    Column(
-                                      children: [
-                                        // if (products[index].products.length != 1)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 4),
-                                          child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  searchWord,
-                                                  style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500),
-                                                ),
-                                                IconButton(
-                                                    onPressed: () {
-                                                      showModalBottomSheet(
-                                                          backgroundColor:
-                                                              Colors.white,
-                                                          context: context,
-                                                          builder: (context) => StatefulBuilder(
-                                                              builder: ((context, StateSetter setModalState) => Container(
-                                                                  margin: const EdgeInsets.symmetric(vertical: 16),
-                                                                  height: 500,
-                                                                  child: ListView.builder(
-                                                                      itemCount: products[index].products.length,
-                                                                      itemBuilder: (context, i) {
-                                                                        return GestureDetector(
-                                                                          onTap:
-                                                                              () {
-                                                                            setState(() {
-                                                                              _selectModalIndexes![index] = i;
-                                                                            });
-                                                                            setModalState(
-                                                                              () {
-                                                                                _selectIndexes![index] = i;
-                                                                              },
-                                                                            );
-                                                                          },
-                                                                          child:
-                                                                              Container(
-                                                                            margin:
-                                                                                EdgeInsets.all(8),
-                                                                            padding:
-                                                                                const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-                                                                            alignment:
-                                                                                Alignment.center,
-                                                                            decoration: BoxDecoration(
-                                                                                border: i == _selectIndexes![index] ? Border.all(color: Colors.blue) : null,
-                                                                                borderRadius: BorderRadius.circular(16),
-                                                                                color: Colors.white),
-                                                                            child: ListContainer(
-                                                                                products[index].products[i],
-                                                                                true,
-                                                                                null,
-                                                                                null),
-                                                                          ),
-                                                                        );
-                                                                      })))));
-                                                    },
-                                                    icon: const Icon(
-                                                        Icons.chevron_right)),
-                                              ]),
-                                        ),
-                                        // if (products[index].products.length != 1)
-                                        Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 4),
-                                            child: const Divider()),
-                                        ListContainer(
-                                            product, false, products, index)
-                                      ],
-                                    )
-                                  ],
-                                )
-                                // Personクラスのメンバ変数を使用する
-
-                                ),
-                            if (products[index].products.length != 1)
-                              Stack(
-                                alignment: AlignmentDirectional.center,
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Expanded(
+                        //   child:
+                        ListView.builder(
+                            // Listのデータの数を数える
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: products.length,
+                            itemBuilder: (context, index) {
+                              // index番目から数えて、０〜３まで登録されているデータを表示する変数
+                              var product = products[index]
+                                  .products[_selectIndexes![index]];
+                              final searchWord = products[index].searchWord;
+                              print(products);
+                              // downloadImage(product.imageURL);
+                              return Stack(
+                                alignment: AlignmentDirectional.topEnd,
                                 children: [
                                   Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: const BoxDecoration(
-                                        color: Colors.blueGrey,
-                                        shape: BoxShape.circle),
-                                  ),
-                                  Text(
-                                    '${products[index].products.length}',
-                                    style: const TextStyle(color: Colors.white),
-                                  )
+                                      padding: const EdgeInsets.all(12),
+                                      margin: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: Stack(
+                                        children: [
+                                          Column(
+                                            children: [
+                                              // if (products[index].products.length != 1)
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 4),
+                                                child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        searchWord,
+                                                        style: const TextStyle(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w500),
+                                                      ),
+                                                      IconButton(
+                                                          onPressed: () {
+                                                            showModalBottomSheet(
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .white,
+                                                                context:
+                                                                    context,
+                                                                builder: (context) => StatefulBuilder(
+                                                                    builder: ((context, StateSetter setModalState) => Container(
+                                                                        margin: const EdgeInsets.symmetric(vertical: 16),
+                                                                        height: 500,
+                                                                        child: ListView.builder(
+                                                                            itemCount: products[index].products.length,
+                                                                            itemBuilder: (context, i) {
+                                                                              return GestureDetector(
+                                                                                onTap: () {
+                                                                                  setState(() {
+                                                                                    _selectModalIndexes![index] = i;
+                                                                                  });
+                                                                                  setModalState(
+                                                                                    () {
+                                                                                      _selectIndexes![index] = i;
+                                                                                    },
+                                                                                  );
+                                                                                },
+                                                                                child: Container(
+                                                                                  margin: EdgeInsets.all(8),
+                                                                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+                                                                                  alignment: Alignment.center,
+                                                                                  decoration: BoxDecoration(border: i == _selectIndexes![index] ? Border.all(color: Colors.blue) : null, borderRadius: BorderRadius.circular(16), color: Colors.white),
+                                                                                  child: ListContainer(products[index].products[i], true, null, null),
+                                                                                ),
+                                                                              );
+                                                                            })))));
+                                                          },
+                                                          icon: const Icon(Icons
+                                                              .chevron_right)),
+                                                    ]),
+                                              ),
+                                              // if (products[index].products.length != 1)
+                                              Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(horizontal: 4),
+                                                  child: const Divider()),
+                                              ListContainer(product, false,
+                                                  products, index)
+                                            ],
+                                          )
+                                        ],
+                                      )
+                                      // Personクラスのメンバ変数を使用する
+
+                                      ),
+                                  if (products[index].products.length != 1)
+                                    Stack(
+                                      alignment: AlignmentDirectional.center,
+                                      children: [
+                                        Container(
+                                          width: 30,
+                                          height: 30,
+                                          decoration: const BoxDecoration(
+                                              color: Colors.blueGrey,
+                                              shape: BoxShape.circle),
+                                        ),
+                                        Text(
+                                          '${products[index].products.length}',
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                        )
+                                      ],
+                                    ),
                                 ],
-                              ),
-                          ],
-                        );
-                      }),
+                              );
+                            }),
+                        // ),
+                        const SizedBox(
+                          height: 120,
+                        )
+                      ],
+                    ),
+                  ),
                   Container(
                       alignment: Alignment.bottomCenter,
                       padding: const EdgeInsets.all(8),
