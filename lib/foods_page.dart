@@ -25,7 +25,7 @@ class _FoodsPageState extends State<FoodsPage> {
         .where("timeZone", isEqualTo: widget.timeZone)
         .get();
     List<Product> foods = await Future.wait(snapshot.docs.map((doc) async {
-      return Product.fromMap(doc.data(), doc.id);
+      return Product.fromMap(doc.data(), doc.id, null);
     }).toList());
     return foods;
   }
@@ -75,56 +75,129 @@ class _FoodsPageState extends State<FoodsPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Flexible(
-                              child: Container(
-                                child: Row(
-                                  children: [
-                                    foods[index].imageURL != null
-                                        ? SizedBox(
-                                            width: 50,
-                                            height: 50,
-                                            child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: Image.network(
-                                                    foods[index].imageURL!)),
-                                          )
-                                        : const Icon(Icons.fastfood_outlined),
-                                    Flexible(
+                              child: Row(
+                                children: [
+                                  foods[index].imageURL != null
+                                      ? SizedBox(
+                                          width: 50,
+                                          height: 50,
+                                          child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                  foods[index].imageURL!)),
+                                        )
+                                      : const Icon(Icons.fastfood_outlined),
+                                  Flexible(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(left: 10),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(foods[index].name,
-                                              maxLines: 1,
+                                              // maxLines: 1,
                                               softWrap: true,
-                                              overflow: TextOverflow.ellipsis,
+                                              // overflow: TextOverflow.ellipsis,
                                               style: const TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w500)),
                                           Text(
                                             'Calorie: ${foods[index].calorie}',
                                             style: const TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 14,
                                                 color: Colors.black45),
                                           )
                                         ],
                                       ),
-                                    )
-                                  ],
-                                ),
+                                    ),
+                                  )
+                                ],
                               ),
                             ),
-                            IconButton(
-                                onPressed: () {
-                                  FirebaseFirestore.instance
-                                      .collection("calories")
-                                      .doc(foods[index].id)
-                                      .delete();
-                                  setState(() {
-                                    snapshot.data!.removeAt(index);
-                                  });
-                                },
-                                icon: const Icon(Icons.delete))
+                            Row(
+                              children: [
+                                IconButton(
+                                    onPressed: () {
+                                      FirebaseFirestore.instance
+                                          .collection("calories")
+                                          .doc(foods[index].id)
+                                          .update({
+                                        "amount": FieldValue.increment(-1)
+                                      });
+                                      if (foods[index].amount == 1) {
+                                        showDialog<void>(
+                                            context: context,
+                                            builder: (_) {
+                                              return AlertDialog(
+                                                title: Text('削除しますか？'),
+                                                content:
+                                                    Text(foods[index].name),
+                                                actions: <Widget>[
+                                                  MaterialButton(
+                                                    child: Text('いいえ'),
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                  ),
+                                                  MaterialButton(
+                                                    child: Text('はい'),
+                                                    onPressed: () {
+                                                      FirebaseFirestore.instance
+                                                          .collection(
+                                                              "calories")
+                                                          .doc(foods[index].id)
+                                                          .delete();
+                                                      setState(() {
+                                                        snapshot.data!
+                                                            .removeAt(index);
+                                                      });
+                                                      Navigator.pop(context);
+                                                    },
+                                                  )
+                                                ],
+                                              );
+                                            });
+                                      } else {
+                                        foods[index].amount -= 1;
+                                        setState(() {});
+                                      }
+                                    },
+                                    icon: const Icon(Icons.remove, size: 20)),
+                                Text(
+                                  "${foods[index].amount}",
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                IconButton(
+                                    onPressed: () {
+                                      FirebaseFirestore.instance
+                                          .collection("calories")
+                                          .doc(foods[index].id)
+                                          .update({
+                                        "amount": FieldValue.increment(1)
+                                      });
+                                      foods[index].amount += 1;
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(
+                                      Icons.add,
+                                      size: 20,
+                                    ))
+                              ],
+                            )
+                            // IconButton(
+                            //     onPressed: () {
+                            //       FirebaseFirestore.instance
+                            //           .collection("calories")
+                            //           .doc(foods[index].id)
+                            //           .delete();
+                            //       setState(() {
+                            //         snapshot.data!.removeAt(index);
+                            //       });
+                            //     },
+                            //     icon: const Icon(Icons.delete))
                           ],
                         ),
                       );

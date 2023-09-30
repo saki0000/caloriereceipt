@@ -266,27 +266,28 @@ class _MyHomePageState extends State<MyHomePage> {
             "snack": {"calorie": 0, "foods": []},
           };
           for (var c in calories) {
-            todayCalorie += c.calorie;
+            int calorie = c.calorie * c.amount;
+            todayCalorie += calorie;
             switch (c.timeZone) {
               case "breakfast":
                 final breakfastMap = timeZoneCalorieData["breakfast"];
                 breakfastMap!["foods"].add(c);
-                breakfastMap["calorie"] += c.calorie;
+                breakfastMap["calorie"] += calorie;
                 break;
               case "lunch":
                 final lunchMap = timeZoneCalorieData["lunch"];
                 lunchMap!["foods"].add(c);
-                lunchMap["calorie"] += c.calorie;
+                lunchMap["calorie"] += calorie;
                 break;
               case "dinner":
                 final dinnerMap = timeZoneCalorieData["dinner"];
                 dinnerMap!["foods"].add(c);
-                dinnerMap["calorie"] += c.calorie;
+                dinnerMap["calorie"] += calorie;
                 break;
               case "snack":
                 final snackMap = timeZoneCalorieData["snack"];
                 snackMap!["foods"].add(c);
-                snackMap["calorie"] += c.calorie;
+                snackMap["calorie"] += calorie;
                 break;
             }
           }
@@ -548,13 +549,15 @@ class Calorie {
   final String? imageURL;
   final String date;
   final String timeZone;
+  final int amount;
 
   Calorie(
       {required this.name,
       required this.calorie,
       required this.imageURL,
       required this.date,
-      required this.timeZone});
+      required this.timeZone,
+      required this.amount});
 
   factory Calorie.fromMap(Map<String, dynamic> data) {
     return Calorie(
@@ -562,6 +565,7 @@ class Calorie {
         calorie: data["calorie"],
         imageURL: data["imageURL"],
         date: data["date"],
-        timeZone: data["timeZone"]);
+        timeZone: data["timeZone"],
+        amount: data["amount"]);
   }
 }

@@ -47,7 +47,6 @@ class _ResultPageState extends State<ResultPage> {
           w.replaceAll("-", "ー").split("").toSet().toList();
       splitedWord
           .removeWhere((e) => ['~', '*', '/', '[', ']', ' ', "ﾞ"].contains(e));
-      print(splitedWord);
 
       for (var i = 0; i < splitedWord.length; i++) {
         splitedWord[i] = convertText(input: splitedWord[i]);
@@ -57,13 +56,11 @@ class _ResultPageState extends State<ResultPage> {
         query = query.where('wordsMap.$s', isEqualTo: true);
       }
       final snapshot = await query.get();
-      print(splitedWord);
       List<Product> products = await Future.wait(snapshot.docs.map((doc) async {
-        return Product.fromMap(doc.data(), doc.id);
+        return Product.fromMap(doc.data(), doc.id, 1);
       }).toList());
-      print(products);
       if (products.isNotEmpty) {
-        searchProducts.add(SearchProducts(searchWord: w, products: products));
+        searchProducts.add(SearchProducts(searchWord: w, data: products));
       }
       int length = searchProducts.length;
       _selectIndexes = List.filled(length, 0, growable: true);
@@ -86,60 +83,124 @@ class _ResultPageState extends State<ResultPage> {
   }
 
   Widget ListContainer(Product product, bool isModal,
-      List<SearchProducts>? products, int? index) {
-    double width = isModal
-        ? MediaQuery.of(context).size.width * 0.85
-        : MediaQuery.of(context).size.width * 0.75;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        SizedBox(
-          width: width,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              product.imageURL != null
-                  ? SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(product.imageURL!)),
-                    )
-                  : const Icon(Icons.fastfood_outlined),
-              Flexible(
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(product.name,
-                      maxLines: 1,
-                      softWrap: true,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w500)),
-                  Text(
-                    'Calorie: ${product.calorie}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black45),
-                  )
-                ],
-              )),
-            ],
+      List<SearchProducts>? products, int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Row(
+              children: [
+                product.imageURL != null
+                    ? SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(product.imageURL!)),
+                      )
+                    : const Icon(Icons.fastfood_outlined),
+                Flexible(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(product.name,
+                            // maxLines: 1,
+                            softWrap: true,
+                            // overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w500)),
+                        SizedBox(
+                          height: 2,
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              '${product.calorie}kcal',
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black45),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        isModal
-            ? Container()
-            : IconButton(
-                onPressed: () {
-                  products!.removeAt(index!);
-                  setState(() {
-                    var ary = _selectIndexes!;
-                    ary.removeAt(index);
-                    _selectIndexes = ary;
-                  });
-                },
-                icon: const Icon(Icons.delete))
-      ],
+          isModal
+              ? Container()
+              : Row(
+                  children: [
+                    IconButton(
+                        onPressed: () {
+                          if (products?[index]
+                                  .data[_selectIndexes![index]]
+                                  .amount ==
+                              1) {
+                            showDialog<void>(
+                                context: context,
+                                builder: (_) {
+                                  return AlertDialog(
+                                    title: Text('削除しますか？'),
+                                    content: Text(products![index]
+                                        .data[_selectIndexes![index]]
+                                        .name),
+                                    actions: <Widget>[
+                                      MaterialButton(
+                                        child: Text('いいえ'),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                      MaterialButton(
+                                        child: Text('はい'),
+                                        onPressed: () {
+                                          products.removeAt(index);
+                                          setState(() {
+                                            var ary = _selectIndexes!;
+                                            ary.removeAt(index);
+                                            _selectIndexes = ary;
+                                          });
+                                          Navigator.pop(context);
+                                        },
+                                      )
+                                    ],
+                                  );
+                                });
+                          } else {
+                            products?[index]
+                                .data[_selectIndexes![index]]
+                                .amount -= 1;
+                            setState(() {});
+                          }
+                        },
+                        icon: const Icon(Icons.remove, size: 20)),
+                    Text(
+                      "${product.amount}",
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          products?[index]
+                              .data[_selectIndexes![index]]
+                              .amount += 1;
+                          setState(() {});
+                        },
+                        icon: const Icon(
+                          Icons.add,
+                          size: 20,
+                        ))
+                  ],
+                )
+        ],
+      ),
     );
   }
 
@@ -178,10 +239,9 @@ class _ResultPageState extends State<ResultPage> {
                             itemCount: products.length,
                             itemBuilder: (context, index) {
                               // index番目から数えて、０〜３まで登録されているデータを表示する変数
-                              var product = products[index]
-                                  .products[_selectIndexes![index]];
+                              var product =
+                                  products[index].data[_selectIndexes![index]];
                               final searchWord = products[index].searchWord;
-                              print(products);
                               // downloadImage(product.imageURL);
                               return Stack(
                                 alignment: AlignmentDirectional.topEnd,
@@ -228,7 +288,7 @@ class _ResultPageState extends State<ResultPage> {
                                                                         margin: const EdgeInsets.symmetric(vertical: 16),
                                                                         height: 500,
                                                                         child: ListView.builder(
-                                                                            itemCount: products[index].products.length,
+                                                                            itemCount: products[index].data.length,
                                                                             itemBuilder: (context, i) {
                                                                               return GestureDetector(
                                                                                 onTap: () {
@@ -246,7 +306,7 @@ class _ResultPageState extends State<ResultPage> {
                                                                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
                                                                                   alignment: Alignment.center,
                                                                                   decoration: BoxDecoration(border: i == _selectIndexes![index] ? Border.all(color: Colors.blue) : null, borderRadius: BorderRadius.circular(16), color: Colors.white),
-                                                                                  child: ListContainer(products[index].products[i], true, null, null),
+                                                                                  child: ListContainer(products[index].data[i], true, null, 1),
                                                                                 ),
                                                                               );
                                                                             })))));
@@ -269,7 +329,7 @@ class _ResultPageState extends State<ResultPage> {
                                       // Personクラスのメンバ変数を使用する
 
                                       ),
-                                  if (products[index].products.length != 1)
+                                  if (products[index].data.length != 1)
                                     Stack(
                                       alignment: AlignmentDirectional.center,
                                       children: [
@@ -281,7 +341,7 @@ class _ResultPageState extends State<ResultPage> {
                                               shape: BoxShape.circle),
                                         ),
                                         Text(
-                                          '${products[index].products.length}',
+                                          '${products[index].data.length}',
                                           style: const TextStyle(
                                               color: Colors.white),
                                         )
@@ -311,17 +371,18 @@ class _ResultPageState extends State<ResultPage> {
 
                             for (var i = 0; i < products.length; i++) {
                               final product = {
-                                "name": products[i]
-                                    .products[_selectIndexes![i]]
-                                    .name,
+                                "name":
+                                    products[i].data[_selectIndexes![i]].name,
                                 "calorie": products[i]
-                                    .products[_selectIndexes![i]]
+                                    .data[_selectIndexes![i]]
                                     .calorie,
                                 "imageURL": products[i]
-                                    .products[_selectIndexes![i]]
+                                    .data[_selectIndexes![i]]
                                     .imageURL,
                                 "timeZone": widget.timeZone,
                                 "date": date,
+                                "amount":
+                                    products[i].data[_selectIndexes![i]].amount,
                               };
                               await query.add(product);
                             }
@@ -395,7 +456,7 @@ class _SearchProductsWidgetState extends State<SearchProductsWidget> {
       final snapshot = await query.get();
 
       searchProducts = await Future.wait(snapshot.docs.map((doc) async {
-        return Product.fromMap(doc.data(), doc.id);
+        return Product.fromMap(doc.data(), doc.id, 1);
       }).toList());
     }
 
@@ -450,35 +511,36 @@ class _SearchProductsWidgetState extends State<SearchProductsWidget> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Flexible(
-                                    child: Container(
-                                      child: Row(
-                                        children: [
-                                          foods[index].imageURL != null
-                                              ? SizedBox(
-                                                  width: 50,
-                                                  height: 50,
-                                                  child: ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      child: Image.network(
-                                                          foods[index]
-                                                              .imageURL!)),
-                                                )
-                                              : const Icon(
-                                                  Icons.fastfood_outlined),
-                                          Flexible(
+                                    child: Row(
+                                      children: [
+                                        foods[index].imageURL != null
+                                            ? SizedBox(
+                                                width: 50,
+                                                height: 50,
+                                                child: ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            100),
+                                                    child: Image.network(
+                                                        foods[index]
+                                                            .imageURL!)),
+                                              )
+                                            : const Icon(
+                                                Icons.fastfood_outlined),
+                                        Flexible(
+                                          child: Padding(
+                                            padding: EdgeInsets.only(left: 8),
                                             child: Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(foods[index].name,
-                                                    maxLines: 1,
+                                                    // maxLines: 1,
                                                     softWrap: true,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                                    // overflow:
+                                                    //     TextOverflow.ellipsis,
                                                     style: const TextStyle(
-                                                        fontSize: 16,
+                                                        fontSize: 14,
                                                         fontWeight:
                                                             FontWeight.w500)),
                                                 Text(
@@ -489,9 +551,9 @@ class _SearchProductsWidgetState extends State<SearchProductsWidget> {
                                                 )
                                               ],
                                             ),
-                                          )
-                                        ],
-                                      ),
+                                          ),
+                                        )
+                                      ],
                                     ),
                                   ),
                                   IconButton(
@@ -499,7 +561,7 @@ class _SearchProductsWidgetState extends State<SearchProductsWidget> {
                                         widget.setAddData(
                                             widget.data,
                                             SearchProducts(
-                                                products: [foods[index]],
+                                                data: [foods[index]],
                                                 searchWord: _searchWord!));
                                         widget.setParentState(0);
                                         Navigator.of(context).pop();
@@ -522,9 +584,9 @@ class _SearchProductsWidgetState extends State<SearchProductsWidget> {
 
 class SearchProducts {
   final String searchWord;
-  final List<Product> products;
+  final List<Product> data;
 
-  SearchProducts({required this.searchWord, required this.products});
+  SearchProducts({required this.searchWord, required this.data});
 }
 
 class Product {
@@ -533,6 +595,7 @@ class Product {
   final String? imageURL;
   // final Uint8List? imageData;
   final String? id;
+  int amount;
 
   Product({
     required this.name,
@@ -540,15 +603,16 @@ class Product {
     this.imageURL,
     // this.imageData,
     this.id,
+    required this.amount,
   });
 
-  factory Product.fromMap(Map<String, dynamic> data, String? id) {
+  factory Product.fromMap(Map<String, dynamic> data, String? id, int? amount) {
     return Product(
-      name: data['name'],
-      calorie: data['calorie'],
-      imageURL: data['imageURL'],
-      id: id,
-    );
+        name: data['name'],
+        calorie: data['calorie'],
+        imageURL: data['imageURL'],
+        id: id,
+        amount: data['amount'] ?? amount);
   }
 }
 

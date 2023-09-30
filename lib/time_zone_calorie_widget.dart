@@ -34,7 +34,10 @@ class TimeZoneCalorieWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueGrey, width: 2),
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.grey[50]!,
+        ),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
@@ -57,7 +60,8 @@ class TimeZoneCalorieWidget extends StatelessWidget {
                           Text(
                             title[timeZone]!,
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                              fontSize: 18,
+                            ),
                           ),
                         ],
                       )
