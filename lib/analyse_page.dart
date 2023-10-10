@@ -1,12 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:caloriereceipt/main.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 // 画像の確認と解析するページ
 class AnalysePage extends StatefulWidget {
@@ -20,7 +16,6 @@ class AnalysePage extends StatefulWidget {
 }
 
 class _AnalysePageState extends State<AnalysePage> {
-  List<String>? _result;
   Future<void> uploadImage(String uploadFileName) async {
     final FirebaseStorage storage = FirebaseStorage.instance;
     Reference ref = storage.ref().child("images");
@@ -37,8 +32,8 @@ class _AnalysePageState extends State<AnalysePage> {
   void route() async {
     if (context.mounted) {
       await Navigator.of(context).pushNamed('/result-page',
-          arguments:
-              ResultPageArg(_result!, widget.timeZone!, widget.selectedDate!));
+          arguments: ResultPageArg(
+              widget.timeZone!, widget.selectedDate!, widget.image!));
     }
   }
 
@@ -74,43 +69,11 @@ class _AnalysePageState extends State<AnalysePage> {
   }
 
   Widget _analysisButton() {
-    final db = FirebaseFirestore.instance;
     return MaterialButton(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
         color: Colors.blueGrey,
         textColor: Colors.white,
         onPressed: () async {
-          List<int> imageBytes = widget.image!.readAsBytesSync();
-          String base64Image = base64Encode(imageBytes);
-          final params = {
-            "image": {"content": base64Image},
-            "features": [
-              {"type": "TEXT_DETECTION"}
-            ],
-            "imageContext": {
-              "languageHints": ["ja"]
-            }
-          };
-          final text = await FirebaseFunctions.instance
-              .httpsCallable('annotateImage')
-              .call(params)
-              .then((v) {
-            return v.data[0]["fullTextAnnotation"]["text"].split("\n");
-          }).catchError((e) {
-            print(e);
-            print(e.details);
-            print(e.message);
-            return '読み取りエラーです';
-          });
-          setState(() {
-            _result = text;
-          });
-          db.collection("foods").add({"text": _result});
-
-          DateTime now = DateTime.now();
-          DateFormat outputFormat = DateFormat('yyyy-MM-dd-Hm');
-          String date = outputFormat.format(now);
-          uploadImage(date);
           route();
         },
         child: const Text(

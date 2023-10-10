@@ -1,20 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 // 解析したレシートから一致したデータを表示するページ
 class ResultPage extends StatefulWidget {
-  final List<String> receipt;
   final String timeZone;
   final DateTime selectedDate;
+  final File? image;
 
   const ResultPage(
       {Key? key,
-      required this.receipt,
       required this.timeZone,
-      required this.selectedDate})
+      required this.selectedDate,
+      this.image})
       : super(key: key);
   @override
   State<ResultPage> createState() => _ResultPageState();
@@ -24,6 +28,7 @@ class _ResultPageState extends State<ResultPage> {
   late Future<List<SearchProducts>> _data;
   List<int>? _selectModalIndexes;
   List<int>? _selectIndexes;
+  List<String>? _receipt;
 
   void setAddData(List<SearchProducts> products, SearchProducts newData) {
     products.add(newData);
@@ -37,11 +42,66 @@ class _ResultPageState extends State<ResultPage> {
     });
   }
 
+  Future analyseReceipt(image) async {
+    final db = FirebaseFirestore.instance;
+
+    List<int> imageBytes = image.readAsBytesSync();
+    String base64Image = base64Encode(imageBytes);
+    final params = {
+      "image": {"content": base64Image},
+      "features": [
+        {"type": "TEXT_DETECTION"}
+      ],
+      "imageContext": {
+        "languageHints": ["ja"]
+      }
+    };
+    final text = await FirebaseFunctions.instance
+        .httpsCallable('annotateImage')
+        .call(params)
+        .then((v) {
+      return v.data[0]["fullTextAnnotation"]["text"].split("\n");
+    }).catchError((e) {
+      print(e);
+      print(e.details);
+      print(e.message);
+      return '読み取りエラーです';
+    });
+
+    db.collection("foods").add({"text": text});
+
+    DateTime now = DateTime.now();
+    DateFormat outputFormat = DateFormat('yyyy-MM-dd-Hm');
+    String date = outputFormat.format(now);
+    uploadImage(date, image);
+    setState(() {
+      _receipt = text;
+    });
+    print(_receipt);
+  }
+
+  Future<void> uploadImage(String uploadFileName, image) async {
+    final FirebaseStorage storage = FirebaseStorage.instance;
+    Reference ref = storage.ref().child("images");
+
+    UploadTask task = ref.child(uploadFileName).putFile(image);
+
+    try {
+      await task;
+    } catch (e) {
+      print(e);
+    }
+  }
+
   Future<List<SearchProducts>> _fetchProduct() async {
     List<SearchProducts> searchProducts = [];
     final firestore = FirebaseFirestore.instance;
 
-    for (String w in widget.receipt) {
+    if (widget.image != null) {
+      await analyseReceipt(widget.image!);
+    }
+    print(_receipt);
+    for (String w in _receipt!) {
       Query<Map<String, dynamic>> query = firestore.collection('products');
       List<String> splitedWord =
           w.replaceAll("-", "ー").split("").toSet().toList();

@@ -7,6 +7,7 @@ import 'package:caloriereceipt/time_zone_calorie_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,11 +36,11 @@ class AnalysePageArg {
 }
 
 class ResultPageArg {
-  final List<String> receipt;
   final String timeZone;
   final DateTime selectedDate;
+  final File? image;
 
-  ResultPageArg(this.receipt, this.timeZone, this.selectedDate);
+  ResultPageArg(this.timeZone, this.selectedDate, this.image);
 }
 
 class FoodsPageArg {
@@ -64,9 +65,9 @@ class MyApp extends StatelessWidget {
             final arg = settings.arguments as ResultPageArg;
             return MaterialPageRoute(
               builder: (context) => ResultPage(
-                receipt: arg.receipt,
                 timeZone: arg.timeZone,
                 selectedDate: arg.selectedDate,
+                image: arg.image,
               ),
             );
           } else if (settings.name == '/analyse-page') {
@@ -157,7 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (image == null) return;
       final imageTemp = File(image.path);
       setState(() => _image = imageTemp);
-      route();
+      route('/analyse-page');
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
     }
@@ -173,16 +174,16 @@ class _MyHomePageState extends State<MyHomePage> {
       final imageTemp = File(image.path);
 
       setState(() => _image = imageTemp);
-      route();
+      routeToResultPage();
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
     }
   }
 
   // 画面遷移をする関数
-  void route() async {
+  void route(String routePath) async {
     if (context.mounted) {
-      await Navigator.of(context).pushNamed('/analyse-page',
+      await Navigator.of(context).pushNamed(routePath,
           arguments: AnalysePageArg(_image!, _timeZone!, _selectedDate!));
     }
   }
@@ -198,6 +199,26 @@ class _MyHomePageState extends State<MyHomePage> {
     final calories =
         snapshot.docs.map((doc) => Calorie.fromMap(doc.data())).toList();
     return calories;
+  }
+
+  Future<void> uploadImage(String uploadFileName, image) async {
+    final FirebaseStorage storage = FirebaseStorage.instance;
+    Reference ref = storage.ref().child("images");
+
+    UploadTask task = ref.child(uploadFileName).putFile(image);
+
+    try {
+      await task;
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void routeToResultPage() async {
+    if (context.mounted) {
+      await Navigator.of(context).pushNamed('/result-page',
+          arguments: ResultPageArg(_timeZone!, _selectedDate!, _image));
+    }
   }
 
   // 下から出てくるモーダル カメラかライブラリを選ぶ
@@ -217,28 +238,40 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
+                  InkWell(
+                    onTap: pickImage,
+                    child: const Row(
+                      children: [
+                        Icon(
                           Icons.photo,
                           size: 30,
                         ),
-                        onPressed: pickImage,
-                      ),
-                      Text("ライブラリから選択")
-                    ],
+                        SizedBox(width: 6),
+                        Text(
+                          "ライブラリから選択",
+                          style: TextStyle(fontSize: 18),
+                        )
+                      ],
+                    ),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                          onPressed: pickImageC,
-                          icon: Icon(
-                            Icons.camera,
-                            size: 30,
-                          )),
-                      Text("カメラで写真を撮る")
-                    ],
+                  SizedBox(
+                    height: 20,
+                  ),
+                  InkWell(
+                    onTap: pickImageC,
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.camera,
+                          size: 30,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "カメラで写真を撮る",
+                          style: TextStyle(fontSize: 18),
+                        )
+                      ],
+                    ),
                   )
                 ],
               )));
