@@ -270,7 +270,14 @@ class _ResultPageState extends State<ResultPage> {
         future: _data,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('検索結果'),
+                backgroundColor: Colors.blueGrey[50],
+              ),
+              backgroundColor: Colors.blueGrey[50],
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           if (snapshot.hasError) {
