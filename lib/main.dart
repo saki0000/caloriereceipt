@@ -158,7 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (image == null) return;
       final imageTemp = File(image.path);
       setState(() => _image = imageTemp);
-      route('/analyse-page');
+      routeToResultPage();
     } on PlatformException catch (e) {
       print('Failed to pick image: $e');
     }
