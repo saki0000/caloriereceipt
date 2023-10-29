@@ -107,6 +107,8 @@ class _ResultPageState extends State<ResultPage> {
         continue;
       } else if (int.tryParse(w.toString()) != null) {
         continue;
+      } else if (w.split("").every((e) => RegExp(r'[a-zA-Z]').hasMatch(e))) {
+        continue;
       }
 
       Query<Map<String, dynamic>> query = firestore.collection('products');
