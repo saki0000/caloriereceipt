@@ -60,7 +60,9 @@ class _ResultPageState extends State<ResultPage> {
         .httpsCallable('annotateImage')
         .call(params)
         .then((v) {
-      return v.data[0]["fullTextAnnotation"]["text"].split("\n");
+      List<String> textExceptint =
+          v.data[0]["fullTextAnnotation"]["text"].split("\n");
+      return textExceptint;
     }).catchError((e) {
       print(e);
       print(e.details);
@@ -73,11 +75,11 @@ class _ResultPageState extends State<ResultPage> {
     DateTime now = DateTime.now();
     DateFormat outputFormat = DateFormat('yyyy-MM-dd-Hm');
     String date = outputFormat.format(now);
+
     uploadImage(date, image);
     setState(() {
       _receipt = text;
     });
-    print(_receipt);
   }
 
   Future<void> uploadImage(String uploadFileName, image) async {
@@ -100,8 +102,13 @@ class _ResultPageState extends State<ResultPage> {
     if (widget.image != null) {
       await analyseReceipt(widget.image!);
     }
-    print(_receipt);
     for (String w in _receipt!) {
+      if (w.contains("*") || w.contains("セブン-イレブン")) {
+        continue;
+      } else if (int.tryParse(w.toString()) != null) {
+        continue;
+      }
+
       Query<Map<String, dynamic>> query = firestore.collection('products');
       List<String> splitedWord =
           w.replaceAll("-", "ー").split("").toSet().toList();
@@ -119,6 +126,13 @@ class _ResultPageState extends State<ResultPage> {
       List<Product> products = await Future.wait(snapshot.docs.map((doc) async {
         return Product.fromMap(doc.data(), doc.id, 1);
       }).toList());
+
+      products.sort((a, b) {
+        var x = splitedWord.length / a.name.length;
+        var y = splitedWord.length / b.name.length;
+        return x.compareTo(y);
+      });
+
       if (products.isNotEmpty) {
         searchProducts.add(SearchProducts(searchWord: w, data: products));
       }
